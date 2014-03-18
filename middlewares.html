@@ -1,0 +1,213 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Middlewares &mdash; Soapbox BSD 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Soapbox BSD 0.0.1 documentation" href="index.html" />
+    <link rel="prev" title="Tutorial" href="tutorial.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tutorial.html" title="Tutorial"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Soapbox BSD 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="middlewares">
+<h1>Middlewares<a class="headerlink" href="#middlewares" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="middlewares-overview">
+<h2>Middlewares Overview<a class="headerlink" href="#middlewares-overview" title="Permalink to this headline">¶</a></h2>
+<p>The soapbox librairie implements a version of the Rack protocol. As a result, a soapbox dispatcher can have middlewares that may inspect, analyze, or modify the application environment, request, and response before and/or after the method call.</p>
+<div class="section" id="middlewares-architecture">
+<h3>Middlewares Architecture<a class="headerlink" href="#middlewares-architecture" title="Permalink to this headline">¶</a></h3>
+<p>Think of a soapbox dispatcher as an onion. Each layer of the onion is a middleware. When you invoke the dispatcher dispatch() method, the outer-most middleware layer is invoked first. When ready, that middleware layer is responsible for optionally invoking the next middleware layer that it surrounds. This process steps deeper into the onion - through each middleware layer - until the service method is invoked. This stepped process is possible because each middleware layer are callable. When you add new middleware to the dispatcher, the added middleware will become a new outer layer and surround the previous outer middleware layer (if available) or the service method call itself.</p>
+</div>
+<div class="section" id="dispatcher-reference">
+<h3>Dispatcher Reference<a class="headerlink" href="#dispatcher-reference" title="Permalink to this headline">¶</a></h3>
+<p>The purpose of a middleware is to inspect, analyze, or modify the application environment, request, and response before and/or after the service methood is invoked. It is easy for each middleware to obtain references to the primary dispatcher, its environment, its request, and its response:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">my_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">next_call</span><span class="p">):</span>
+    <span class="c"># the dispatcher</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">dispatcher</span>
+
+    <span class="c"># the wsgi environment</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">environ</span>
+
+    <span class="c"># the service method to be invoked</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">method</span>
+
+    <span class="c"># the raw http content</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">http_content</span>
+
+    <span class="c"># the parsed soap body</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">soap_body</span>
+
+    <span class="c"># the parsed soap header</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">soap_header</span>
+</pre></div>
+</div>
+<p>Changes made to the environment, request, and response objects will propagate immediately throughout the application and its other middleware layers.</p>
+</div>
+<div class="section" id="next-middleware-reference">
+<h3>Next Middleware Reference<a class="headerlink" href="#next-middleware-reference" title="Permalink to this headline">¶</a></h3>
+<p>Each middleware layer also has a reference to the next inner middleware layer to call with next_call. It is each middleware’s responsibility to optionally call the next middleware. Doing so will allow the request to complete its full lifecycle. If a middleware layer chooses not to call the next inner middleware layer, further inner middleware and the service method itself will not be run.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">my_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">next_call</span><span class="p">):</span>
+    <span class="c"># Optionally call the next middleware</span>
+    <span class="k">return</span> <span class="n">next_call</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="how-to-use-middleware">
+<h2>How to Use Middleware<a class="headerlink" href="#how-to-use-middleware" title="Permalink to this headline">¶</a></h2>
+<p>On the dispatcher instanciation, use the <cite>middlewares</cite> parameter to give a list of middleware, the first middleware in the list will be called first, it is the outer onion.
+This is also possible to add middlewares by modifying the list <cite>dispatcher.middlewares</cite>.</p>
+<div class="section" id="example-middleware">
+<h3>Example Middleware<a class="headerlink" href="#example-middleware" title="Permalink to this headline">¶</a></h3>
+<p>This example middleware will log the client ip address.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">get_client_address</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">next_call</span><span class="p">):</span>
+    <span class="c"># retrieve ip address</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ip</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;HTTP_X_FORWARDED_FOR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">ip</span> <span class="o">=</span> <span class="n">environ</span><span class="p">[</span><span class="s">&#39;REMOTE_ADDR&#39;</span><span class="p">]</span>
+    <span class="c"># log it</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Received request from </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">ip</span><span class="p">))</span>
+    <span class="c"># call next middleware</span>
+    <span class="k">return</span> <span class="n">next_call</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="add-middleware">
+<h3>Add Middleware<a class="headerlink" href="#add-middleware" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">dispatcher</span> <span class="o">=</span> <span class="n">SOAPDispatcher</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="n">middlewares</span><span class="o">=</span><span class="p">[</span>
+    <span class="n">get_client_address</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="c"># or after instanciation</span>
+
+<span class="c"># add an outer middleware</span>
+<span class="n">dispatcher</span><span class="o">.</span><span class="n">middleware</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">get_client_address</span><span class="p">)</span>
+<span class="c"># add an inside middleware</span>
+<span class="n">dispatcher</span><span class="o">.</span><span class="n">middlewate</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">get_client_address</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When the example dispatcher above is invoked, the client ip address will be logged.</p>
+</div>
+</div>
+<div class="section" id="how-to-write-middleware">
+<h2>How to Write Middleware<a class="headerlink" href="#how-to-write-middleware" title="Permalink to this headline">¶</a></h2>
+<p>Middleware must be a callable accepting 2 parameters <cite>request</cite> and <cite>next_call</cite> with these exact names. The callable must return a soapbox response object.
+I encourage you to look at soapbox built-in middleware for working examples (eg. soapbox.middlewares.ExceptionToSoapFault or soapbox.middlewares.ExceptionLogger).</p>
+<p>This example is the most simple implementation of middleware.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">my_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">next_call</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">next_call</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">MyMiddlewate</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">next_call</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">next_call</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Middlewares</a><ul>
+<li><a class="reference internal" href="#middlewares-overview">Middlewares Overview</a><ul>
+<li><a class="reference internal" href="#middlewares-architecture">Middlewares Architecture</a></li>
+<li><a class="reference internal" href="#dispatcher-reference">Dispatcher Reference</a></li>
+<li><a class="reference internal" href="#next-middleware-reference">Next Middleware Reference</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-to-use-middleware">How to Use Middleware</a><ul>
+<li><a class="reference internal" href="#example-middleware">Example Middleware</a></li>
+<li><a class="reference internal" href="#add-middleware">Add Middleware</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-to-write-middleware">How to Write Middleware</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tutorial.html"
+                        title="previous chapter">Tutorial</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/middlewares.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tutorial.html" title="Tutorial"
+             >previous</a> |</li>
+        <li><a href="index.html">Soapbox BSD 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, AuthorName.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

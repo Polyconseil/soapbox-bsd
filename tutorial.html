@@ -1,0 +1,455 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tutorial &mdash; Soapbox BSD 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Soapbox BSD 0.0.1 documentation" href="index.html" />
+    <link rel="next" title="Middleware" href="middlewares.html" />
+    <link rel="prev" title="Welcome to Soapbox BSD’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="middlewares.html" title="Middleware"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Soapbox BSD’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Soapbox BSD 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial assumes some understanding of XML, XSD, WSDL and SOAP.</p>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The main purpose of this library is neat implementation of SOAP protocol,
+but xsd package can used for any XML as it gives means of mapping XML
+to object. The object description generally is similar to Django database models - the static fields that define instance fields. The main difference would be that type is passed as first parameter, rather then being a field e.g</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># in Django</span>
+<span class="n">Django</span><span class="p">:</span> <span class="n">tail_number</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">()</span>
+
+<span class="c"># in soapbox</span>
+<span class="n">soapbox</span><span class="p">:</span> <span class="n">tail_number</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>xsd.Element reflects the nature of the field, elements are fields that
+will be wrapped with tag, other options are xsd.Attribute, xsd.Ref and
+xsd.ListElement. For more detail see xsd.Element pydoc.As SOAP, WSDL and XSD files are also XMLs the xsd package was also used to describe them. The descriptions are located in xsdspec.py, soap.py
+and wsdl.py. soap package also provides dispatcher and client Stub.</p>
+<p>Other elements included in this tool are translators, that can generate python code from formal description or formal description from code. Related files: py2xsd.py, xsd2py.py, wsdl2py.py, py2wsdl.py.</p>
+<p>utils.py is mostly jinja2 helper functions. jinja2 is templating engine used for code generation.</p>
+</div>
+<div class="section" id="working-with-xml">
+<h2>1. Working with XML<a class="headerlink" href="#working-with-xml" title="Permalink to this headline">¶</a></h2>
+<p>The main building blocks are xsd.ComplexType, xsd.Element, xsd.Attribute and simple types defined in xsd package. xsd.ComplexType is a parent to extend to define own type. Main methods for types are xml - translates object into XML, and parsexml builds object from XML.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#Example 1. Rendering object to XML.</span>
+<span class="kn">from</span> <span class="nn">soapbox</span> <span class="kn">import</span> <span class="n">xsd</span>
+
+<span class="k">class</span> <span class="nc">Airport</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">ComplexType</span><span class="p">):</span>
+    <span class="nb">type</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">)</span>
+
+<span class="n">airport</span> <span class="o">=</span> <span class="n">Airport</span><span class="p">()</span>
+<span class="n">airport</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="s">&quot;IATA&quot;</span>
+<span class="n">airport</span><span class="o">.</span><span class="n">code</span> <span class="o">=</span> <span class="s">&quot;WAW&quot;</span>
+<span class="k">print</span> <span class="n">airport</span><span class="o">.</span><span class="n">xml</span><span class="p">(</span><span class="s">&quot;takeoff_airport&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that xml method takes one parameter  - root tag name.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#Example 2. Parsing XML to object.</span>
+<span class="kn">from</span> <span class="nn">soapbox</span> <span class="kn">import</span> <span class="n">xsd</span>
+<span class="k">class</span> <span class="nc">Airport</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">ComplexType</span><span class="p">):</span>
+     <span class="nb">type</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">)</span>
+     <span class="n">code</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">)</span>
+
+<span class="n">XML</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;&lt;takeoff_airport&gt;</span>
+<span class="s">  &lt;type&gt;IATA&lt;/type&gt;</span>
+<span class="s">  &lt;code&gt;WAW&lt;/code&gt;</span>
+<span class="s">&lt;/takeoff_airport&gt;&quot;&quot;&quot;</span>
+
+<span class="n">airpport</span> <span class="o">=</span> <span class="n">Airport</span><span class="o">.</span><span class="n">parsexml</span><span class="p">(</span><span class="n">XML</span><span class="p">)</span>
+<span class="k">print</span> <span class="s">&quot;Type:&quot;</span><span class="p">,</span> <span class="n">airport</span><span class="o">.</span><span class="n">type</span><span class="c">#prints Type: IATA</span>
+<span class="k">print</span> <span class="s">&quot;Code:&quot;</span><span class="p">,</span> <span class="n">airport</span><span class="o">.</span><span class="n">code</span><span class="c">#Code: WAW</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="c">#Example 3. Nested ComplexTypes with attributes.</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">soapbox</span> <span class="kn">import</span> <span class="n">xsd</span>
+<span class="k">class</span> <span class="nc">Airport</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">ComplexType</span><span class="p">):</span>
+     <span class="nb">type</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">)</span>
+     <span class="n">code</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Flight</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">ComplexType</span><span class="p">):</span>
+    <span class="n">tail_number</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">)</span>
+    <span class="nb">type</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Attribute</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">Integer</span><span class="p">,</span> <span class="n">use</span><span class="o">=</span><span class="n">xsd</span><span class="o">.</span><span class="n">Use</span><span class="o">.</span><span class="n">OPTIONAL</span><span class="p">)</span>
+    <span class="n">takeoff_airport</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">Airport</span><span class="p">)</span>
+    <span class="n">takeoff_datetime</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">landing_airport</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">Airport</span><span class="p">)</span>
+    <span class="n">landing_datetime</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">flight</span> <span class="o">=</span> <span class="n">Flight</span><span class="p">(</span><span class="n">tail_number</span><span class="o">=</span><span class="s">&quot;LN-KKA&quot;</span><span class="p">)</span><span class="c">#Constructor handles field inititailization.</span>
+<span class="n">flight</span><span class="o">.</span><span class="n">takeoff_airport</span> <span class="o">=</span> <span class="n">Airport</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&quot;IATA&quot;</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s">&quot;WAW&quot;</span><span class="p">)</span>
+<span class="n">flight</span><span class="o">.</span><span class="n">landing_airport</span> <span class="o">=</span> <span class="n">Airport</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s">&quot;ICAO&quot;</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s">&quot;EGLL&quot;</span><span class="p">)</span>
+
+<span class="k">print</span> <span class="n">flight</span><span class="o">.</span><span class="n">xml</span><span class="p">(</span><span class="s">&quot;flight&quot;</span><span class="p">)</span>
+<span class="c">#datetime field types will accept, datetime object or string,</span>
+<span class="c">#that parses correctly to such object.</span>
+<span class="n">flight</span><span class="o">.</span><span class="n">takeoff_datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+<span class="k">print</span> <span class="n">flight</span><span class="o">.</span><span class="n">xml</span><span class="p">(</span><span class="s">&quot;flight&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>will produce</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="o">&lt;</span><span class="n">flight</span> <span class="n">tail_number</span><span class="o">=</span><span class="s">&quot;LN-KKA&quot;</span><span class="o">&gt;</span>
+  <span class="o">&lt;</span><span class="n">takeoff_airport</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nb">type</span><span class="o">&gt;</span><span class="n">IATA</span><span class="o">&lt;/</span><span class="nb">type</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">WAW</span><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;</span>
+  <span class="o">&lt;/</span><span class="n">takeoff_airport</span><span class="o">&gt;</span>
+  <span class="o">&lt;</span><span class="n">takeoff_datetime</span><span class="o">&gt;</span><span class="mi">2011</span><span class="o">-</span><span class="mo">05</span><span class="o">-</span><span class="mo">06</span><span class="n">T11</span><span class="p">:</span><span class="mi">11</span><span class="p">:</span><span class="mi">23</span><span class="o">&lt;/</span><span class="n">takeoff_datetime</span><span class="o">&gt;</span>
+  <span class="o">&lt;</span><span class="n">landing_airport</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="nb">type</span><span class="o">&gt;</span><span class="n">ICAO</span><span class="o">&lt;/</span><span class="nb">type</span><span class="o">&gt;</span>
+    <span class="o">&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">EGLL</span><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;</span>
+  <span class="o">&lt;/</span><span class="n">landing_airport</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">flight</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="schema">
+<h2>2. Schema<a class="headerlink" href="#schema" title="Permalink to this headline">¶</a></h2>
+<p>xsd.Schema is an object that aggregates all informations stored in XSD file. There two main use cases for this object. It can be used to generate XSD file or it can be generated from such file. For detail field description see: xsd.Schema pydoc. Schema instance is required for validation and because SOAP webservice performs validation is required for service configuration too: See documentation Defining webservice.</p>
+<div class="section" id="generating-code-from-xsd-file">
+<h3>2.1 Generating code from XSD file<a class="headerlink" href="#generating-code-from-xsd-file" title="Permalink to this headline">¶</a></h3>
+<p>py2xsd.py generates Python representation of XML from XSD file.
+Example:
+{{{xsd2py.py examplesops.xsd}}}</p>
+<p>will generate:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">soapbox</span> <span class="kn">import</span> <span class="n">xsd</span>
+
+<span class="k">class</span> <span class="nc">Pilot</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">):</span>
+    <span class="n">enumeration</span> <span class="o">=</span> <span class="p">[</span> <span class="s">&quot;CAPTAIN&quot;</span><span class="p">,</span>  <span class="s">&quot;FIRST_OFFICER&quot;</span><span class="p">,</span> <span class="p">]</span>
+
+<span class="k">class</span> <span class="nc">Airport</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">ComplexType</span><span class="p">):</span>
+    <span class="n">INHERITANCE</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">INDICATOR</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Sequence</span>
+    <span class="n">code_type</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">(</span> <span class="n">enumeration</span> <span class="o">=</span>
+    <span class="p">[</span> <span class="s">&quot;ICAO&quot;</span><span class="p">,</span> <span class="s">&quot;IATA&quot;</span><span class="p">,</span> <span class="s">&quot;FAA&quot;</span><span class="p">,])</span> <span class="p">)</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Weight</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">ComplexType</span><span class="p">):</span>
+    <span class="n">INHERITANCE</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">INDICATOR</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Sequence</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">Integer</span><span class="p">)</span>
+    <span class="n">unit</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">(</span> <span class="n">enumeration</span> <span class="o">=</span>
+    <span class="p">[</span> <span class="s">&quot;kg&quot;</span><span class="p">,</span> <span class="s">&quot;lb&quot;</span><span class="p">,])</span> <span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Ops</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">ComplexType</span><span class="p">):</span>
+    <span class="n">INHERITANCE</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">INDICATOR</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Sequence</span>
+    <span class="n">aircraft</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">flight_number</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">)</span>
+    <span class="nb">type</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">(</span> <span class="n">enumeration</span> <span class="o">=</span>
+    <span class="p">[</span> <span class="s">&quot;COMMERCIAL&quot;</span><span class="p">,</span> <span class="s">&quot;INCOMPLETE&quot;</span><span class="p">,</span> <span class="s">&quot;ENGINE_RUN_UP&quot;</span><span class="p">,</span> <span class="s">&quot;TEST&quot;</span><span class="p">,</span> <span class="s">&quot;TRAINING&quot;</span><span class="p">,</span> <span class="s">&quot;FERRY&quot;</span><span class="p">,</span>
+<span class="s">&quot;POSITIONING&quot;</span><span class="p">,</span> <span class="s">&quot;LINE_TRAINING&quot;</span><span class="p">,])</span> <span class="p">)</span>
+    <span class="n">takeoff_airport</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">Airport</span><span class="p">)</span>
+    <span class="n">takeoff_gate_datetime</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">takeoff_datetime</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">DateTime</span><span class="p">)</span>
+    <span class="n">takeoff_fuel</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">Weight</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">takeoff_gross_weight</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">Weight</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">takeoff_pilot</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">Pilot</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">landing_airport</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">Airport</span><span class="p">)</span>
+    <span class="n">landing_gate_datetime</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">landing_datetime</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">DateTime</span><span class="p">)</span>
+    <span class="n">landing_fuel</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">Weight</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">landing_pilot</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">Pilot</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">destination_airport</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">Airport</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">captain_code</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">first_officer_code</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">V2</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">Integer</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">Vref</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">Integer</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">Vapp</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">Integer</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Status</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">ComplexType</span><span class="p">):</span>
+    <span class="n">INHERITANCE</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">INDICATOR</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Sequence</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">(</span> <span class="n">enumeration</span> <span class="o">=</span>
+    <span class="p">[</span> <span class="s">&quot;INSERTED&quot;</span><span class="p">,</span> <span class="s">&quot;UPDATED&quot;</span><span class="p">,</span> <span class="s">&quot;EXISTS&quot;</span><span class="p">,])</span> <span class="p">)</span>
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">Long</span><span class="p">)</span>
+
+<span class="n">Schema</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Schema</span><span class="p">(</span>
+    <span class="n">targetNamespace</span> <span class="o">=</span> <span class="s">&quot;http://flightdataservices.com/ops.xsd&quot;</span><span class="p">,</span>
+    <span class="n">elementFormDefault</span> <span class="o">=</span> <span class="s">&quot;unqualified&quot;</span><span class="p">,</span>
+    <span class="n">simpleTypes</span> <span class="o">=</span> <span class="p">[</span> <span class="n">Pilot</span><span class="p">,],</span>
+    <span class="n">attributeGroups</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">groups</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">complexTypes</span> <span class="o">=</span> <span class="p">[</span> <span class="n">Airport</span><span class="p">,</span> <span class="n">Weight</span><span class="p">,</span> <span class="n">Ops</span><span class="p">,</span> <span class="n">Status</span><span class="p">,],</span>
+    <span class="n">elements</span> <span class="o">=</span> <span class="p">{</span>  <span class="s">&quot;status&quot;</span><span class="p">:</span><span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">Status</span><span class="p">),</span> <span class="s">&quot;ops&quot;</span><span class="p">:</span><span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">Ops</span><span class="p">),})</span>
+</pre></div>
+</div>
+<p>Let redirect output to the python file.
+{{{xsd2py.py examplesops.xsd &gt; tmpops.py}}}.
+Now calling {{{py2xsd.py tmpops.py}}} will generate equivalent XSD from Python code. xsd2py script expects schema instance to be defined in global scope called &#8220;Schema&#8221;, in way similar to one in generated code.</p>
+</div>
+</div>
+<div class="section" id="web-service">
+<h2>3. Web service<a class="headerlink" href="#web-service" title="Permalink to this headline">¶</a></h2>
+<p>When WSDL file is provided server or client code can be generated using wsdl2py script. If not, advised would be to write code first a then use browser to request specification. Accessing URL &lt;your webservice context&gt;?wsdl with browser will give current WSDL with XSD embaded.</p>
+<div class="section" id="generating-code-from-wsdl-file">
+<h3>3.1 Generating code from WSDL file<a class="headerlink" href="#generating-code-from-wsdl-file" title="Permalink to this headline">¶</a></h3>
+<p><em>wsdl2py</em> can generate either client or server code. For server use -s, client -c flag. Server example: {{{wsdl2py.py -s Specificationsops.wsdl}}}</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># ...XSD part truncated...</span>
+<span class="n">PutOps_method</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Method</span><span class="p">(</span><span class="n">function</span> <span class="o">=</span> <span class="n">PutOps</span><span class="p">,</span>
+    <span class="n">soapAction</span> <span class="o">=</span> <span class="s">&quot;http://polaris.flightdataservices.com/ws/ops/PutOps&quot;</span><span class="p">,</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="s">&quot;ops&quot;</span><span class="p">,</span><span class="c">#Pointer to Schema.elements</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="s">&quot;status&quot;</span><span class="p">,</span><span class="c">#Pointer to Schema.elements</span>
+    <span class="n">operationName</span> <span class="o">=</span> <span class="s">&quot;PutOps&quot;</span><span class="p">)</span>
+
+<span class="n">SERVICE</span> <span class="o">=</span> <span class="n">soap</span><span class="o">.</span><span class="n">Service</span><span class="p">(</span>
+    <span class="n">targetNamespace</span> <span class="o">=</span> <span class="s">&quot;http://flightdataservices.com/ops.wsdl&quot;</span><span class="p">,</span>
+    <span class="n">location</span> <span class="o">=</span> <span class="s">&quot;http://polaris.flightdataservices.com/ws/ops&quot;</span><span class="p">,</span>
+    <span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="p">,</span>
+    <span class="n">methods</span> <span class="o">=</span> <span class="p">[</span><span class="n">PutOps_method</span><span class="p">,</span> <span class="p">])</span>
+</pre></div>
+</div>
+<p>Generated code includes: methods descriptions, service description, dispatcher and Django ulrs.py binding.</p>
+<p>xsd.Method describes one method for service(that can consist from more then one method). Methods give dispatcher informations required for method distinction - soapAction and operationName, and function to call on incoming SOAP message.
+For detail field meaning see xsd.Method pydoc.</p>
+<p>SERVICE aggregates all informations required for WSDL generation and correct dispatching. get_django_dispatch returns a function binded to SERVICE that pointed from urls.py will call appropriate function on incoming SOAP message. The called function, in this example PutOps, is expected to return object from XSD that could be translated
+to correct and valid response - for this example this would be Status instance.</p>
+<p>URLs binding it is commented out, paste this code into your urls.py and change &lt;fill the module path&gt; to point file where to code was generated.</p>
+</div>
+<div class="section" id="client">
+<h3>3.2 Client<a class="headerlink" href="#client" title="Permalink to this headline">¶</a></h3>
+<p>Client can be generated with flag -c: {{{wsdl2py.py -c examplesops.wsdl}}}</p>
+<p>Generated code:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># ...XSD Part truncated ...</span>
+<span class="n">PutOps_method</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Method</span><span class="p">(</span>
+   <span class="n">soapAction</span> <span class="o">=</span> <span class="s">&quot;http://polaris.flightdataservices.com/ws/ops/PutOps&quot;</span><span class="p">,</span>
+   <span class="nb">input</span> <span class="o">=</span> <span class="s">&quot;ops&quot;</span><span class="p">,</span><span class="c">#Pointer to Schema.elements</span>
+   <span class="n">output</span> <span class="o">=</span> <span class="s">&quot;status&quot;</span><span class="p">,</span><span class="c">#Pointer to Schema.elements</span>
+   <span class="n">operationName</span> <span class="o">=</span> <span class="s">&quot;PutOps&quot;</span><span class="p">)</span>
+
+<span class="n">SERVICE</span> <span class="o">=</span> <span class="n">soap</span><span class="o">.</span><span class="n">Service</span><span class="p">(</span>
+    <span class="n">targetNamespace</span> <span class="o">=</span> <span class="s">&quot;http://flightdataservices.com/ops.wsdl&quot;</span><span class="p">,</span>
+    <span class="n">location</span> <span class="o">=</span> <span class="s">&quot;http://polaris.flightdataservices.com/ws/ops&quot;</span><span class="p">,</span>
+    <span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="p">,</span>
+    <span class="n">methods</span> <span class="o">=</span> <span class="p">[</span><span class="n">PutOps_method</span><span class="p">,</span> <span class="p">])</span>
+
+
+<span class="k">class</span> <span class="nc">ServiceStub</span><span class="p">(</span><span class="n">soap</span><span class="o">.</span><span class="n">Stub</span><span class="p">):</span>
+    <span class="n">SERVICE</span> <span class="o">=</span> <span class="n">SERVICE</span>
+
+    <span class="k">def</span> <span class="nf">PutOps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ops</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s">&quot;PutOps&quot;</span><span class="p">,</span> <span class="n">ops</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>ServiceStub is a proxy object that defines methods available on remote webservice. Calling one of those method, in the example there is only one PutOps, will produce SOAP call to remote server defined in SERVICE. The methods will return appropriate object from XSD description or raise an exception on any problems.</p>
+<p>For more real example: See examplesclient.py</p>
+</div>
+<div class="section" id="building-webservice">
+<h3>3.3. Building Webservice<a class="headerlink" href="#building-webservice" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>The build a webservice we need to define few things:</dt>
+<dd><ul class="first last simple">
+<li>Classes that would be send via SOAP</li>
+<li>Schema instance that aggregates all classes with name space etc.,</li>
+<li>Web service functions and all related informations</li>
+<li>Service instance to put everything together</li>
+<li>Binding to URL</li>
+</ul>
+</dd>
+</dl>
+<p>Lets build the stock web service that will give a stock price for
+provided company code and datetime.</p>
+<div class="section" id="stack-classes">
+<h4>3.3.1 Stack classes<a class="headerlink" href="#stack-classes" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">GetStockPrice</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">ComplexType</span><span class="p">):</span>
+    <span class="n">company</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">String</span><span class="p">,</span> <span class="n">minOccurs</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">datetime</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">DateTime</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">StockPrice</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">ComplexType</span><span class="p">):</span>
+    <span class="n">price</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">xsd</span><span class="o">.</span><span class="n">Integer</span><span class="p">)</span>
+
+<span class="n">Schema</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Schema</span><span class="p">(</span>
+      <span class="c">#Should be unique URL, can be any string.</span>
+      <span class="n">targetNamespace</span> <span class="o">=</span> <span class="s">&quot;http://code.google.com/p/soapbox/stock.xsd&quot;</span><span class="p">,</span>
+      <span class="c">#Register all complex types to schema.</span>
+      <span class="n">complexTypes</span> <span class="o">=</span> <span class="p">[</span><span class="n">GetStockPrice</span><span class="p">,</span> <span class="n">StockPrice</span><span class="p">],</span>
+      <span class="n">elements</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;getStockPrice&quot;</span><span class="p">:</span><span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">GetStockPrice</span><span class="p">),</span>
+                  <span class="s">&quot;stockPrice&quot;</span><span class="p">:</span><span class="n">xsd</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="n">StockPrice</span><span class="p">)}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Note the elements in schema, for this version it is required to create
+an element of specific type and use it string element name as input/output in Service definitions. WSDL specifications allows also direct use of type, which is not covered yet.</p>
+</div>
+<div class="section" id="metod-definition">
+<h4>3.3.2 Metod definition<a class="headerlink" href="#metod-definition" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">get_stock_price</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">gsp</span><span class="p">):</span>
+    <span class="k">print</span> <span class="n">gsp</span><span class="o">.</span><span class="n">company</span>
+    <span class="k">return</span> <span class="n">StockPrice</span><span class="p">(</span><span class="n">price</span><span class="o">=</span><span class="mi">139</span><span class="p">)</span>
+
+<span class="n">get_stock_price_method</span> <span class="o">=</span> <span class="n">xsd</span><span class="o">.</span><span class="n">Method</span><span class="p">(</span>
+    <span class="n">function</span> <span class="o">=</span> <span class="n">get_stock_price</span><span class="p">,</span>
+    <span class="n">soapAction</span> <span class="o">=</span> <span class="s">&quot;http://code.google.com/p/soapbox/stock/get_stock_price&quot;</span><span class="p">,</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="s">&quot;getStockPrice&quot;</span><span class="p">,</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="s">&quot;stockPrice&quot;</span><span class="p">,</span>
+    <span class="n">operationName</span> <span class="o">=</span> <span class="s">&quot;GetStockPrice&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="puting-all-together">
+<h4>3.3.3 Puting all together<a class="headerlink" href="#puting-all-together" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SERVICE</span> <span class="o">=</span> <span class="n">soap</span><span class="o">.</span><span class="n">Service</span><span class="p">(</span>
+    <span class="c">#WSDL targetNamespce</span>
+    <span class="n">targetNamespace</span> <span class="o">=</span> <span class="s">&quot;http://code.google.com/p/soapbox/stock.wsdl&quot;</span><span class="p">,</span>
+    <span class="c">#The url were request should be send.</span>
+    <span class="n">location</span> <span class="o">=</span> <span class="s">&quot;http://127.0.0.1:8000/stock&quot;</span><span class="p">,</span>
+    <span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="p">,</span>
+    <span class="n">methods</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_stock_price_method</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>and wsgi.py</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">wsgiref.simple_server</span> <span class="kn">import</span> <span class="n">make_server</span>
+<span class="kn">from</span> <span class="nn">soapbox</span> <span class="kn">import</span> <span class="n">soap_dispatch</span>
+<span class="kn">from</span> <span class="nn">service_gen</span> <span class="kn">import</span> <span class="n">SERVICE</span>
+
+<span class="n">dispatcher</span> <span class="o">=</span> <span class="n">soap_dispatch</span><span class="o">.</span><span class="n">SOAPDispatcher</span><span class="p">(</span><span class="n">SERVICE</span><span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">soap_dispatch</span><span class="o">.</span><span class="n">WsgiSoapApplication</span><span class="p">({</span><span class="s">&#39;/ChargePoint/services/chargePointService&#39;</span><span class="p">:</span> <span class="n">dispatcher</span><span class="p">})</span>
+
+<span class="n">httpd</span> <span class="o">=</span> <span class="n">make_server</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="mi">8000</span><span class="p">,</span> <span class="n">app</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">&quot;Serving HTTP on port 8000...&quot;</span><span class="p">)</span>
+<span class="n">httpd</span><span class="o">.</span><span class="n">serve_forever</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Now requesting <a class="reference external" href="http://127.0.0.1:8000/stock?wsdl">http://127.0.0.1:8000/stock?wsdl</a> will give service specification and SOAP messages like:</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;soapenv:Envelope</span> <span class="na">xmlns:soapenv=</span><span class="s">&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;</span> <span class="na">xmlns:stoc=</span><span class="s">&quot;http://code.google.com/p/soapbox/stock.xsd&quot;</span><span class="nt">&gt;</span>
+   <span class="nt">&lt;soapenv:Header/&gt;</span>
+   <span class="nt">&lt;soapenv:Body&gt;</span>
+      <span class="nt">&lt;stoc:getStockPrice&gt;</span>
+         <span class="nt">&lt;company&gt;</span>Google<span class="nt">&lt;/company&gt;</span>
+         <span class="nt">&lt;datetime&gt;</span>2010-08-20T21:39:59<span class="nt">&lt;/datetime&gt;</span>
+      <span class="nt">&lt;/stoc:getStockPrice&gt;</span>
+   <span class="nt">&lt;/soapenv:Body&gt;</span>
+<span class="nt">&lt;/soapenv:Envelope&gt;</span>
+</pre></div>
+</div>
+<p>can be sent to <a class="reference external" href="http://127.0.0.1:8000/stock">http://127.0.0.1:8000/stock</a>.</p>
+<p><em>The full working example can be found in examples/stock.</em></p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tutorial</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#working-with-xml">1. Working with XML</a></li>
+<li><a class="reference internal" href="#schema">2. Schema</a><ul>
+<li><a class="reference internal" href="#generating-code-from-xsd-file">2.1 Generating code from XSD file</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#web-service">3. Web service</a><ul>
+<li><a class="reference internal" href="#generating-code-from-wsdl-file">3.1 Generating code from WSDL file</a></li>
+<li><a class="reference internal" href="#client">3.2 Client</a></li>
+<li><a class="reference internal" href="#building-webservice">3.3. Building Webservice</a><ul>
+<li><a class="reference internal" href="#stack-classes">3.3.1 Stack classes</a></li>
+<li><a class="reference internal" href="#metod-definition">3.3.2 Metod definition</a></li>
+<li><a class="reference internal" href="#puting-all-together">3.3.3 Puting all together</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to Soapbox BSD&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="middlewares.html"
+                        title="next chapter">Middleware</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tutorial.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="middlewares.html" title="Middleware"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Soapbox BSD’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">Soapbox BSD 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, AuthorName.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
